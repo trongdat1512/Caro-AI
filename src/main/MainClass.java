@@ -1,6 +1,6 @@
-package mainPackage;
+package main;
 
-import gameStatePacakge.GameGraphicsManagement;
+import gameState.GameGraphicsManagement;
 
 public class MainClass {
 	public static void main(String[] args) {

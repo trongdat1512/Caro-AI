@@ -1,4 +1,4 @@
-package displayPackage;
+package display;
 
 import java.awt.Canvas;
 import java.awt.Dimension;
@@ -26,7 +26,6 @@ public class Display {
 
 	public void createDisplay() {
 
-		// frame
 		frame = new JFrame();
 		frame.setVisible(true);
 		frame.setSize(width, height);
@@ -35,7 +34,6 @@ public class Display {
 		frame.setResizable(false);
 		frame.setLocation(GameSettings.loacationX, GameSettings.locationY);
 
-		// canvas
 		canvas.setPreferredSize(new Dimension(width, height));
 		canvas.setMaximumSize(new Dimension(width, height));
 		canvas.setMinimumSize(new Dimension(width, height));

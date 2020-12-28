@@ -1,4 +1,4 @@
-package temporary;
+package gameState;
 
 public class Move {
 	public int row;

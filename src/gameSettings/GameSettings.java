@@ -1,15 +1,15 @@
 package gameSettings;
 
 public class GameSettings {
-	// board size
-	public static int rowColom = 10;
+	// Board size
+	public static int boardSize = 15;
 	
-	// game properties
-	public static String title = "Gomoku-AI";
-	public static int height = 150 + rowColom*50;
-	public static int width = 450 + rowColom*50;
+	// Game properties
+	public static String title = "Caro-AI";
+	public static int height = 150 + boardSize*50;
+	public static int width = 500 + boardSize*50;
 
-	// location on monitor
+	// Location on monitor
 	public static int loacationX = 150;
 	public static int locationY = 100;
 }

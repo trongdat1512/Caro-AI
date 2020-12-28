@@ -1,4 +1,4 @@
-package gameStatePacakge;
+package gameState;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -12,7 +12,7 @@ import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 
 import asset.ImageLoader;
-import displayPackage.Display;
+import display.Display;
 import gameSettings.GameSettings;
 
 public class GameGraphicsManagement implements Runnable, KeyListener, MouseListener, MouseMotionListener {
@@ -36,7 +36,7 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 	private BufferStrategy buffer;
 	private Graphics g;
 
-	private int rowColom;
+	private int boardSize;
 
 	private Game game;
 
@@ -48,6 +48,7 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 
 	private boolean isGameEnd = false;
 	private boolean isGameStarted = false;
+	private boolean isPruning;
 	private String winStatement = "";
 	private String lastMoveComputer = "";
 	private String lastMoveYou = "";
@@ -69,9 +70,9 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 		this.title = GameSettings.title;
 		this.display = new Display(width, height, title);
 
-		this.rowColom = GameSettings.rowColom;
+		this.boardSize = GameSettings.boardSize;
 	}
-// initialized all images, created game instance and added all sorts of listeners.
+	
 	private void init() {
 
 		player = playerCpu;
@@ -89,13 +90,13 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 		display.canvas.addMouseListener(this);
 	}
 
-//	start
+
 	public synchronized void start() {
 		thread = new Thread(this);
 		thread.start();
 
 	}
-//	stop
+
 	public synchronized void stop() {
 		try {
 			thread.join();
@@ -105,52 +106,50 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 
 	}
 
-//	functionality of Drawing board 
+
 	private void drawBoard(Graphics g) {
 
 		g.setColor(Color.black);
 
-		int lineWeight = 1; // thickness of lines of the board 
+		int lineWeight = 1;
 
 		int lineNumber = 1;
 		char lineCharacter = 'A';
 
-		for (int i = paddingX; i <= (rowColom * BOX_width) + paddingX; i += BOX_width) {
+		for (int i = paddingX; i <= (boardSize * BOX_width) + paddingX; i += BOX_width) {
 			g.setFont(new Font("arial", Font.CENTER_BASELINE, 14));
-			if(i < (rowColom * BOX_width) + paddingX) {
-				g.drawString(Character.toString(lineCharacter++), i - 50, paddingY - 45 + rowColom*50);
+			if(i < (boardSize * BOX_width) + paddingX) {
+				g.drawString(Character.toString(lineCharacter++), i - 50, paddingY - 45 + boardSize*50);
 			}				
 			for (int k = i - lineWeight; k < i + lineWeight; k++)
-				g.drawLine(k-75, paddingY-75, k-75, BOX_height * rowColom+25);
+				g.drawLine(k-75, paddingY-75, k-75, BOX_height * boardSize+25);
 
 		}
 		lineNumber = 1;
 
-		for (int i = paddingY; i <= (rowColom * BOX_height) + paddingY; i += BOX_height) {
-			if(i < (rowColom * BOX_height) + paddingY) {
-				g.drawString(Integer.toString(lineNumber++), paddingX - 55 + rowColom*50, i - 48);
+		for (int i = paddingY; i <= (boardSize * BOX_height) + paddingY; i += BOX_height) {
+			if(i < (boardSize * BOX_height) + paddingY) {
+				g.drawString(Integer.toString(lineNumber++), paddingX - 55 + boardSize*50, i - 48);
 			}						
 			for (int k = i - lineWeight; k < i + lineWeight; k++)
-				g.drawLine(paddingX-75, k-75, BOX_width * rowColom+25, k-75);
+				g.drawLine(paddingX-75, k-75, BOX_width * boardSize+25, k-75);
 		}
 
 	}
 
-//	Returns Alphabet corresponding to the line number
-	private String colomToString(int x) {
+	private String columnToString(int x) {
 		char c = 'A';
 		c += x;
 		return Character.toString(c);
 
 	}
 
-//	Functionality of managing mouse pointer
 	private void mousePointAt(Graphics g) {
 
 		g.setColor(Color.blue);
 		g.setFont(new Font("Agency fb", Font.CENTER_BASELINE, 40));
 
-		String s = colomToString(mousePointAtY - 1) + ", " + mousePointAtX;
+		String s = columnToString(mousePointAtY - 1) + ", " + mousePointAtX;
 
 		if (!(mousePointAtX == -1 || mousePointAtY == -1)
 				&& board[mousePointAtX - 1][mousePointAtY - 1].equals(playerEmpty)) {
@@ -160,26 +159,20 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 
 	}
 
-//	Functionality of drawing the loaction of mouse pointing at
 	private void mousePointIndicatior(Graphics g) {
 
 		int x = mousePointAtY * BOX_width - (BOX_width / 2);
 		int y = mousePointAtX * BOX_height - (BOX_height / 2);
 
-		/*
-		 * g.setColor(Color.GRAY); g.fillOval(x, y, BOX_width, BOX_height);
-		 */
-
 		g.drawImage(mouseIndicator, x, y, null);
 
 	}
 
-//	Functionality drawing player according to the board
 	private void drawPlayer(Graphics g) {
 
 		BufferedImage playerImage = null;
-		for (int i = 0; i < rowColom; i++) {
-			for (int j = 0; j < rowColom; j++) {
+		for (int i = 0; i < boardSize; i++) {
+			for (int j = 0; j < boardSize; j++) {
 
 				if (board[i][j].equals(playerCpu)) {
 					playerImage = black;
@@ -195,10 +188,9 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 				}
 			}
 		}
-
 	}
 
-//	Check board state [win/lose/tie]
+	//	Check board state
 	private void checkWin() {
 		int x = game.checkWin(board);
 
@@ -232,19 +224,23 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 		if (isGameEnd) {
 			g.setColor(Color.blue);
 			g.setFont(new Font("Century Gothic", Font.CENTER_BASELINE, 30));
-
-			g.drawString(winStatement, width - 340, 360);
-
+			g.drawString(winStatement, width - 340, 360);	
+			
+			g.setColor(Color.black);
+			g.setFont(new Font("Century Gothic", Font.BOLD, 20));
+			g.drawString("Press Space to restart" , width - 340, 540);
 		}
 	}
 
 	private void drawStartPlayString(Graphics g) {
 		if (!isGameStarted) {
 			g.setColor(Color.black);
+			g.setFont(new Font("Century Gothic", Font.BOLD, 30));
+			g.drawString("AI mode:", width - 400, 340);
+			
 			g.setFont(new Font("Century Gothic", Font.BOLD, 20));
-
-			g.drawString("Press Enter to start the game", width - 340, 450);
-
+			g.drawString("1. Minimax algorithm", width - 400, 380);
+			g.drawString("2. Minimax algorithm with αβ pruning", width - 400, 410);
 		}
 	}
 
@@ -291,7 +287,6 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 
 	}
 
-//	renders all graphical elements
 	private void render() {
 		buffer = display.canvas.getBufferStrategy();
 		if (buffer == null) {
@@ -309,7 +304,6 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 		g.dispose();
 	}
 
-//	Where AI calls the optimal move
 	private void play() {
 		Move move;
 		if (player.equals(playerCpu)) {
@@ -319,14 +313,15 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 				firstMove = false;
 			} else {
 				System.out.println("Thinking. . . !!");
-				move = game.findOptimalMove(board, computerMoves);
+				move = game.findOptimalMove(board, computerMoves, isPruning);
+				System.out.println(columnToString(move.col) + (move.row + 1));
 			}
 
 			board[move.row][move.col] = playerCpu;
 			
 			computerMoves++;
 
-			lastMoveComputer = "Computer, " + colomToString(move.col) + (move.row + 1);
+			lastMoveComputer = "Computer, " + columnToString(move.col) + (move.row + 1);
 
 			checkWin();
 			
@@ -335,7 +330,6 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 
 	}
 
-//	Reset functionality
 	public void resetGame() {
 		board = game.initialiseBoard();
 		isGameEnd = false;
@@ -356,13 +350,12 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 		}
 	}
 
-//	Assigning move to the board array according to the mouse click
 	@Override
 	public void mouseClicked(MouseEvent e) {
 
 		if (!isGameEnd && player.equals(playerHuman)) {
 
-			if (mousePointAtX < 1 || mousePointAtX > rowColom || mousePointAtY < 1 || mousePointAtY > rowColom) {
+			if (mousePointAtX < 1 || mousePointAtX > boardSize || mousePointAtY < 1 || mousePointAtY > boardSize) {
 				mousePointAtX = -1;
 				mousePointAtY = -1;
 			}
@@ -376,7 +369,7 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 
 					board[row][col] = "O";
 
-					lastMoveYou = "You, " + colomToString(col) + (row + 1);
+					lastMoveYou = "You, " + columnToString(col) + (row + 1);
 
 					checkWin();
 					player = playerCpu;
@@ -427,7 +420,7 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 			if (x % 50 >= 25)
 				mousePointAtY++;
 
-			if (mousePointAtX < 1 || mousePointAtX > rowColom || mousePointAtY < 1 || mousePointAtY > rowColom) {
+			if (mousePointAtX < 1 || mousePointAtX > boardSize || mousePointAtY < 1 || mousePointAtY > boardSize) {
 				mousePointAtX = -1;
 				mousePointAtY = -1;
 			}
@@ -450,10 +443,15 @@ public class GameGraphicsManagement implements Runnable, KeyListener, MouseListe
 		case KeyEvent.VK_SPACE:
 			resetGame();
 			break;
-		case KeyEvent.VK_ENTER:
+		case KeyEvent.VK_1:
 			isGameStarted = true;
+			isPruning = false;
 			break;
-		}
+		case KeyEvent.VK_2:
+			isGameStarted = true;
+			isPruning = true;
+			break;
+		}	
 	}
 
 	@Override
